@@ -2,6 +2,7 @@
 
 #include "FPSCharacter.h"
 #include "FPSProjekt.h"
+#include "Components/CapsuleComponent.h"
 
 
 // Sets default values
@@ -9,6 +10,15 @@ AFPSCharacter::AFPSCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Create a first person camera component.
+    FPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+    // Attach the camera component to our capsule component.
+    FPSCameraComponent->SetupAttachment(GetCapsuleComponent());
+    // Position the camera slightly above the eyes.
+    FPSCameraComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f + BaseEyeHeight));
+    // Allow the pawn to control camera rotation.
+    FPSCameraComponent->bUsePawnControlRotation = true;
 
 }
 
@@ -38,6 +48,14 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
     // Set up "movement" bindings.
     PlayerInputComponent->BindAxis("MoveForward", this, &AFPSCharacter::MoveForward);
     PlayerInputComponent->BindAxis("MoveRight", this, &AFPSCharacter::MoveRight);
+
+	 // Set up "look" bindings.
+    PlayerInputComponent->BindAxis("Turn", this, &AFPSCharacter::AddControllerYawInput);
+    PlayerInputComponent->BindAxis("LookUp", this, &AFPSCharacter::AddControllerPitchInput);
+
+	// Set up "action" bindings.
+PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AFPSCharacter::StartJump);
+PlayerInputComponent->BindAction("Jump", IE_Released, this, &AFPSCharacter::StopJump);
 }
 
 void AFPSCharacter::MoveForward(float Value)
@@ -52,4 +70,14 @@ void AFPSCharacter::MoveRight(float Value)
     // Find out which way is "right" and record that the player wants to move that way.
     FVector Direction = FRotationMatrix(Controller->GetControlRotation()).GetScaledAxis(EAxis::Y);
     AddMovementInput(Direction, Value);
+}
+
+void AFPSCharacter::StartJump()
+{
+    bPressedJump = true;
+}
+
+void AFPSCharacter::StopJump()
+{
+    bPressedJump = false;
 }
